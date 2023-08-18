@@ -5,6 +5,12 @@ CGEventRef _Nullable eventCallback(CGEventTapProxy proxy, CGEventType eventType,
 {
     CGKeyCode keyCode = (CGKeyCode) CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
     CGEventFlags flags = CGEventGetFlags(event);
+    // Translate keyCode based on our current keyboard layout
+    // UCKeyTranslate
+    UniCharCount actualStringLength = 0;
+    UniChar unicodeString[1];
+    CGEventKeyboardGetUnicodeString(event, 50, &actualStringLength, unicodeString);
+    NSLog(@"%lu %C", actualStringLength, unicodeString[0]);
     if (eventType == kCGEventKeyDown) {
         NSLog(@"Callback triggered: %d %d", keyCode, (int) flags);
         if (flags & kCGEventFlagMaskAlphaShift) {
@@ -14,13 +20,14 @@ CGEventRef _Nullable eventCallback(CGEventTapProxy proxy, CGEventType eventType,
             NSLog(@"Shift is down");
         }
     }
-
     return event;
 }
 
 int main(int argc, char** argv)
 {
-  void* userInfo = nil;
+  // File to log keystrokes into.
+  FILE* file = fopen("keytap.txt", "w+");
+  void* userInfo = (void*) file;
   CGEventMask mask = CGEventMaskBit(kCGEventKeyDown);
 
   // Create a tap for keyboard events.
@@ -45,4 +52,6 @@ int main(int argc, char** argv)
   CFRunLoopRemoveSource(ref, source, kCFRunLoopCommonModes);
   CFRelease(source);
   CFRelease(tap);
+
+  fclose(file);
 }
